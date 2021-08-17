@@ -6,26 +6,14 @@
 
 ### Install from HACS (recommended)
 
-1. Have [HACS][hacs] installed, this will allow you to easily manage and track updates.
-1. Search for "Temperature Feels Like".
-1. Click Install below the found integration.
-
-... then if you want to use `configuration.yaml` to configure sensor...
-1. Add `humidex` sensor to your `configuration.yaml` file. See configuration examples below.
-1. Restart Home Assistant
-
-### Manual installation
-
-1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
-1. If you do not have a `custom_components` directory (folder) there, you need to create it.
-1. In the `custom_components` directory (folder) create a new folder called `humidex`.
-1. Download file `humidex.zip` from github.
-1. Extract _all_ files from this archive you downloaded in the directory (folder) you created.
-1. Restart Home Assistant
-
-... then if you want to use `configuration.yaml` to configure sensor...
-1. Add `humidex` sensor to your `configuration.yaml` file. See configuration examples below.
-1. Restart Home Assistant
+1. Use HACS after adding this `https://github.com/geckom/ha-humidex` as a custom repository. Skip to 7.
+2. If no HACS, use the tool of choice to open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
+3. If you do not have a `custom_components` directory (folder) there, you need to create it.
+4. In the `custom_components` directory (folder) create a new folder called `humidex`.
+5. Download _all_ the files from the `custom_components/humidex/` directory (folder) in this repository.
+6. Place the files you downloaded in the new directory (folder) you created.
+7. Update your configuration.yaml as per below.
+8. Restart Home Assistant.
 
 ### Configuration Examples
 
