@@ -19,7 +19,7 @@
 1. Using the tool of choice open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
 1. If you do not have a `custom_components` directory (folder) there, you need to create it.
 1. In the `custom_components` directory (folder) create a new folder called `humidex`.
-1. Download file `humidex.zip` from the [latest release section][releases-latest] in this repository.
+1. Download file `humidex.zip` from github.
 1. Extract _all_ files from this archive you downloaded in the directory (folder) you created.
 1. Restart Home Assistant
 
