@@ -1,0 +1,9 @@
+{
+    "domain": "humidex",
+    "name": "Humidex Calculator",
+    "documentation": "https://www.github.com",
+    "version": "1.0",
+    "dependencies": [],
+    "codeowners": ["geckom"],
+    "requirements": []
+  }
