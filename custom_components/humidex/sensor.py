@@ -119,20 +119,20 @@ class HumidexSensor(Entity):
             
             if humidex < 20:
                 self._state = 'No significant'
-                self._icon = 'mdi:wifi-strength-outline'
+                self._icon = 'mdi:gauge-empty'
             elif humidex < 30:
                 self._state = 'Comfortable'
-                self._icon = 'mdi:wifi-strength-1'
+                self._icon = 'mdi:gauge-empty'
             elif humidex < 40:
                 self._state = 'Some discomfort'
-                self._icon = 'mdi:wifi-strength-2'
+                self._icon = 'mdi:gauge-low'
             elif humidex < 46:
                 self._state = 'Avoid exertion'
-                self._icon = 'mdi:wifi-strength-3'
+                self._icon = 'mdi:gauge'
             elif humidex < 54:
                 self._state = 'Dangerous'
-                self._icon = 'mdi:wifi-strength-4'
+                self._icon = 'mdi:gauge-full'
             else:
                 self._state = 'Heat stroke imminent'
-                self._icon = 'mdi:wifi-strength-4-alert'
+                self._icon = 'mdi:gauge-full'
             #self._state = humidex
