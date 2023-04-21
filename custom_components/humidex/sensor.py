@@ -3,7 +3,7 @@ from homeassistant.const import (CONF_NAME, ATTR_ICON)
 from homeassistant.helpers.entity import Entity
 
 import homeassistant.helpers.config_validation as cv
-from homeassistant.util.temperature import convert as convert_temperature
+from homeassistant.util.unit_conversion import TemperatureConverter
 
 from homeassistant.const import (
         ATTR_UNIT_OF_MEASUREMENT,
@@ -90,7 +90,7 @@ class HumidexSensor(Entity):
 
             # Calculate kelvin from celcius or fahrenheit
             entity_unit = temperature.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
-            temp = convert_temperature(
+            temp = TemperatureConverter.convert(
                 float(temp), entity_unit, TEMP_CELSIUS
             )
 
