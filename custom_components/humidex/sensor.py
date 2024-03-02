@@ -7,7 +7,7 @@ from homeassistant.util.unit_conversion import TemperatureConverter
 
 from homeassistant.const import (
         ATTR_UNIT_OF_MEASUREMENT,
-        TEMP_CELSIUS,
+        UnitOfTemperature,
 )
 
 import voluptuous as vol
@@ -91,7 +91,7 @@ class HumidexSensor(Entity):
             # Calculate kelvin from celcius or fahrenheit
             entity_unit = temperature.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
             temp = TemperatureConverter.convert(
-                float(temp), entity_unit, TEMP_CELSIUS
+                float(temp), entity_unit, UnitOfTemperature.CELSIUS
             )
 
             # Calculate dewpoint
