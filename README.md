@@ -53,3 +53,8 @@ logger:
   logs:
     custom_components.humidex: debug
 ```
+
+## Icon assets
+
+- HACS assets are included at repo root: `icon.png` and `logo.png`.
+- Home Assistant integration icons in the UI are sourced from the `home-assistant/brands` repository. Matching assets are included in `.github/brands/humidex/` for submission.
