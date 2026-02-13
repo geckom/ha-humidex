@@ -25,5 +25,19 @@
       "already_configured": "This temperature/humidity pair is already configured.",
       "reconfigure_successful": "Humidex configuration was updated."
     }
+  },
+  "entity": {
+    "sensor": {
+      "comfort": {
+        "state": {
+          "no_significant_discomfort": "No significant discomfort",
+          "comfortable": "Comfortable",
+          "some_discomfort": "Some discomfort",
+          "avoid_exertion": "Avoid exertion",
+          "dangerous": "Dangerous",
+          "heat_stroke_imminent": "Heat stroke imminent"
+        }
+      }
+    }
   }
 }

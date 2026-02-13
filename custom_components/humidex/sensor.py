@@ -93,10 +93,13 @@ def _calculate_humidex(temperature_c: float, humidity_pct: float) -> float:
     dewpoint_c = (b * alpha) / (a - alpha)
 
     kelvin = 273.15
+    humidex_reference_kelvin = 273.16
     temperature_k = temperature_c + kelvin
     dewpoint_k = dewpoint_c + kelvin
 
-    vapor_pressure = 6.11 * math.exp(5417.7530 * ((1 / kelvin) - (1 / dewpoint_k)))
+    vapor_pressure = 6.11 * math.exp(
+        5417.7530 * ((1 / humidex_reference_kelvin) - (1 / dewpoint_k))
+    )
     humidex_c = temperature_k + (0.5555 * (vapor_pressure - 10.0)) - kelvin
 
     return max(humidex_c, temperature_c)
@@ -300,6 +303,7 @@ class HumidexComfortSensor(HumidexBaseSensor):
 
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_options = COMFORT_LEVELS
+    _attr_translation_key = "comfort"
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize the comfort classification sensor."""

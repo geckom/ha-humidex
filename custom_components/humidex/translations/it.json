@@ -1,0 +1,16 @@
+{
+  "entity": {
+    "sensor": {
+      "comfort": {
+        "state": {
+          "no_significant_discomfort": "Nessun disagio significativo",
+          "comfortable": "Confortevole",
+          "some_discomfort": "Leggero disagio",
+          "avoid_exertion": "Evitare sforzi",
+          "dangerous": "Pericoloso",
+          "heat_stroke_imminent": "Colpo di calore imminente"
+        }
+      }
+    }
+  }
+}
