@@ -10,6 +10,7 @@ A Home Assistant custom integration that calculates humidex from temperature + r
 - Temperature source support for Celsius and Fahrenheit
 - Automatic legacy YAML import into config entries
 - HACS-ready packaging (`hacs.json`, `icon.png`, `logo.png`)
+- Minimum Home Assistant version: `2024.8.0`
 
 ## Installation
 
