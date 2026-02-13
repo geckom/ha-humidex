@@ -269,8 +269,6 @@ class HumidexBaseSensor(SensorEntity):
 class HumidexScoreSensor(HumidexBaseSensor):
     """Numeric Humidex score sensor."""
 
-    _attr_device_class = SensorDeviceClass.TEMPERATURE
-    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_suggested_display_precision = 1
     _attr_icon = "mdi:thermometer-lines"
@@ -284,7 +282,7 @@ class HumidexScoreSensor(HumidexBaseSensor):
 
     @property
     def native_value(self) -> float | None:
-        """Return the rounded humidex score in Celsius units."""
+        """Return the rounded humidex score."""
         if self._humidex_value is None:
             return None
         return round(self._humidex_value, 1)
