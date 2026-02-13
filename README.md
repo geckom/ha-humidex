@@ -1,71 +1,55 @@
-*Please :star: this repo if you find it useful*
+# Humidex for Home Assistant
 
-# Sensor of Humidex for Home Assistant
+Custom integration that creates two sensors from a temperature source and humidity source:
+- Numeric humidex score
+- Comfort rating (`Comfortable`, `Some discomfort`, etc.)
 
 ## Installation
 
-### Install from HACS (recommended)
+### HACS (recommended)
+1. Add `https://github.com/geckom/ha-humidex` as a custom repository in HACS.
+2. Install the integration.
+3. Restart Home Assistant.
+4. Go to `Settings -> Devices & services -> Add Integration`.
+5. Search for `Humidex` and complete setup.
 
-1. Use HACS after adding this `https://github.com/geckom/ha-humidex` as a custom repository. Skip to 7.
-2. If no HACS, use the tool of choice to open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
-3. If you do not have a `custom_components` directory (folder) there, you need to create it.
-4. In the `custom_components` directory (folder) create a new folder called `humidex`.
-5. Download _all_ the files from the `custom_components/humidex/` directory (folder) in this repository.
-6. Place the files you downloaded in the new directory (folder) you created.
-7. Update your configuration.yaml as per below.
-8. Restart Home Assistant.
+### Manual
+1. Copy `custom_components/humidex` into your Home Assistant `custom_components` directory.
+2. Restart Home Assistant.
+3. Add the integration from `Settings -> Devices & services`.
 
-### Configuration Examples
+## GUI Setup
+
+The integration setup form asks for:
+- `Temperature entity` (supports Celsius and Fahrenheit source values)
+- `Humidity entity`
+- Optional display name
+- Optional comfort icon override
+
+After setup, two entities are created:
+- `<Name> Humidex` (numeric score, exposed as temperature)
+- `<Name> Comfort` (comfort rating enum)
+
+## YAML Migration
+
+Legacy YAML configuration is still accepted temporarily and automatically imported into a UI config entry:
 
 ```yaml
-# Example configuration.yaml entry
 sensor:
   - platform: humidex
+    name: Study
     temperature: sensor.study_air_temperature
     humidity: sensor.study_humidity
+    icon: mdi:gauge
 ```
 
-<p align="center">* * *</p>
-I put a lot of work into making this repo and component available and updated to inspire and help others! I will be glad to receive thanks from you — it will give me new strength and add enthusiasm:
-
-### Configuration Variables
-
-**temperature:**\
-  _(entity) (Required)_\
-  Temperature provider entity ID. This can be celcius or fahreheit.
-
-**humidity:**\
-  _(entity) (Required)_\
-  Humidity provider entity ID.
-
-> **_Note_**:\
-> Temperature and humidity values are both required for calculations.
-
-## Track updates
-
-You can automatically track new versions of this component and update it by [HACS][hacs].
+When Home Assistant starts, this YAML entry is imported into the integration UI flow. YAML support is deprecated and should be removed from `configuration.yaml` after import.
 
 ## Troubleshooting
 
-To enable debug logs use this configuration:
 ```yaml
-# Example configuration.yaml entry
 logger:
   default: info
   logs:
     custom_components.humidex: debug
 ```
-... then restart HA.
-
-## Contributions are welcome!
-
-This is an active open-source project. We are always open to people who want to
-use the code or contribute to it.
-
-We have set up a separate document containing our
-[contribution guidelines](CONTRIBUTING.md).
-
-Thank you for being involved! :heart_eyes:
-
-***
-

@@ -1,9 +1,13 @@
 {
-    "domain": "humidex",
-    "name": "Humidex Calculator",
-    "documentation": "https://www.github.com",
-    "version": "1.0",
-    "dependencies": [],
-    "codeowners": ["geckom"],
-    "requirements": []
-  }
+  "domain": "humidex",
+  "name": "Humidex Calculator",
+  "codeowners": [
+    "@geckom"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/geckom/ha-humidex",
+  "issue_tracker": "https://github.com/geckom/ha-humidex/issues",
+  "iot_class": "calculated",
+  "requirements": [],
+  "version": "2.0.0"
+}
