@@ -1,38 +1,43 @@
 # Humidex for Home Assistant
 
-Custom integration that creates two sensors from a temperature source and humidity source:
-- Numeric humidex score
-- Comfort rating (`Comfortable`, `Some discomfort`, etc.)
+A Home Assistant custom integration that calculates humidex from temperature + relative humidity and exposes two entities:
+- `<Name> Humidex` (numeric humidex score)
+- `<Name> Humidex Comfort` (comfort rating enum)
+
+## Features
+- UI-first setup with config flow
+- Reconfigure support from the integration UI
+- Temperature source support for Celsius and Fahrenheit
+- Automatic legacy YAML import into config entries
+- HACS-ready packaging (`hacs.json`, `icon.png`, `logo.png`)
 
 ## Installation
 
 ### HACS (recommended)
-1. Add `https://github.com/geckom/ha-humidex` as a custom repository in HACS.
-2. Install the integration.
+1. In HACS, add `https://github.com/geckom/ha-humidex` as a custom repository.
+2. Install `Humidex`.
 3. Restart Home Assistant.
 4. Go to `Settings -> Devices & services -> Add Integration`.
 5. Search for `Humidex` and complete setup.
 
 ### Manual
-1. Copy `custom_components/humidex` into your Home Assistant `custom_components` directory.
+1. Copy `custom_components/humidex` into your Home Assistant `custom_components` folder.
 2. Restart Home Assistant.
-3. Add the integration from `Settings -> Devices & services`.
+3. Add `Humidex` from `Settings -> Devices & services`.
 
 ## GUI Setup
 
-The integration setup form asks for:
-- `Temperature entity` (supports Celsius and Fahrenheit source values)
-- `Humidity entity`
-- Optional display name
-- Optional comfort icon override
+The setup form requires:
+- `Temperature entity` (filtered to temperature-class sensors)
+- `Humidity entity` (filtered to humidity-class sensors)
 
-After setup, two entities are created:
-- `<Name> Humidex` (numeric score, exposed as temperature)
-- `<Name> Comfort` (comfort rating enum)
+Optional fields:
+- `Name`
+- `Comfort icon`
 
 ## YAML Migration
 
-Legacy YAML configuration is still accepted temporarily and automatically imported into a UI config entry:
+Legacy YAML is still accepted temporarily and is imported automatically into a config entry.
 
 ```yaml
 sensor:
@@ -43,7 +48,7 @@ sensor:
     icon: mdi:gauge
 ```
 
-When Home Assistant starts, this YAML entry is imported into the integration UI flow. YAML support is deprecated and should be removed from `configuration.yaml` after import.
+After import, remove the YAML block from `configuration.yaml`.
 
 ## Troubleshooting
 
@@ -54,7 +59,16 @@ logger:
     custom_components.humidex: debug
 ```
 
-## Icon assets
+## HACS Compatibility
 
-- HACS assets are included at repo root: `icon.png` and `logo.png`.
-- Home Assistant integration icons in the UI are sourced from the `home-assistant/brands` repository. Matching assets are included in `.github/brands/humidex/` for submission.
+This repository includes the standard assets and metadata HACS expects:
+- `hacs.json`
+- `custom_components/humidex/manifest.json`
+- `icon.png`
+- `logo.png`
+
+## Integration Icon Note
+
+Home Assistant integration tile icons shown in the core UI are sourced from the `home-assistant/brands` repository. Matching assets for submission are included in:
+- `.github/brands/humidex/icon.png`
+- `.github/brands/humidex/logo.png`
