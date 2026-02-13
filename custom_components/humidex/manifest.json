@@ -9,5 +9,5 @@
   "issue_tracker": "https://github.com/geckom/ha-humidex/issues",
   "iot_class": "calculated",
   "requirements": [],
-  "version": "2.0.2"
+  "version": "2.0.3"
 }

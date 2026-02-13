@@ -151,17 +151,9 @@ async def async_setup_platform(
     _import_legacy_yaml_config(hass, config)
 
 
-def setup_platform(
-    hass: HomeAssistant,
-    config: Mapping[str, Any],
-    _add_entities: AddEntitiesCallback,
-    _discovery_info: Mapping[str, Any] | None = None,
+def _import_legacy_yaml_config(
+    hass: HomeAssistant, config: Mapping[str, Any]
 ) -> None:
-    """Handle legacy sync YAML platform setup by importing to config entries."""
-    _import_legacy_yaml_config(hass, config)
-
-
-def _import_legacy_yaml_config(hass: HomeAssistant, config: Mapping[str, Any]) -> None:
     """Queue a config flow import for legacy YAML configuration."""
     _LOGGER.warning(
         "YAML configuration for humidex is deprecated and will be removed in a future release. "

@@ -101,10 +101,15 @@ class HumidexConfigFlow(ConfigFlow, domain=DOMAIN):
         entry = self._get_reconfigure_entry()
 
         if user_input is not None:
-            await self.async_set_unique_id(
-                _entry_unique_id(user_input[CONF_TEMPERATURE], user_input[CONF_HUMIDITY])
+            new_unique_id = _entry_unique_id(
+                user_input[CONF_TEMPERATURE], user_input[CONF_HUMIDITY]
             )
-            self._abort_if_unique_id_mismatch(reason="already_configured")
+            for existing_entry in self._async_current_entries():
+                if (
+                    existing_entry.entry_id != entry.entry_id
+                    and existing_entry.unique_id == new_unique_id
+                ):
+                    return self.async_abort(reason="already_configured")
 
             title = user_input.get(CONF_NAME) or DEFAULT_NAME
             data_updates = {
@@ -117,7 +122,7 @@ class HumidexConfigFlow(ConfigFlow, domain=DOMAIN):
                 entry,
                 title=title,
                 data=data_updates,
-                unique_id=self.unique_id,
+                unique_id=new_unique_id,
             )
             await self.hass.config_entries.async_reload(entry.entry_id)
             return self.async_abort(reason="reconfigure_successful")
