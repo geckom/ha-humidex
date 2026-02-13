@@ -22,10 +22,12 @@ from .const import (
 
 
 def _entry_unique_id(temperature: str, humidity: str) -> str:
+    """Build a stable unique ID from source entity IDs."""
     return f"{temperature}|{humidity}"
 
 
 def _build_schema(user_input: Mapping[str, Any] | None = None) -> vol.Schema:
+    """Build the config flow schema for user and reconfigure steps."""
     data = user_input or {}
 
     return vol.Schema(
@@ -80,7 +82,7 @@ class HumidexConfigFlow(ConfigFlow, domain=DOMAIN):
         return self.async_show_form(step_id="user", data_schema=_build_schema())
 
     async def async_step_import(self, import_config: dict[str, Any]):
-        """Import configuration from YAML."""
+        """Import configuration from YAML into a config entry."""
         await self.async_set_unique_id(
             _entry_unique_id(import_config[CONF_TEMPERATURE], import_config[CONF_HUMIDITY])
         )
