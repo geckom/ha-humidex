@@ -1,0 +1,43 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Humidex",
+        "description": "Create humidex and comfort sensors from temperature and humidity sources.",
+        "data": {
+          "name": "Name",
+          "temperature": "Temperature entity",
+          "humidity": "Humidity entity",
+          "icon": "Comfort icon"
+        }
+      },
+      "reconfigure": {
+        "title": "Reconfigure Humidex",
+        "data": {
+          "name": "Name",
+          "temperature": "Temperature entity",
+          "humidity": "Humidity entity",
+          "icon": "Comfort icon"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This temperature/humidity pair is already configured.",
+      "reconfigure_successful": "Humidex configuration was updated."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "comfort": {
+        "state": {
+          "no_significant_discomfort": "No significant discomfort",
+          "comfortable": "Comfortable",
+          "some_discomfort": "Some discomfort",
+          "avoid_exertion": "Avoid exertion",
+          "dangerous": "Dangerous",
+          "heat_stroke_imminent": "Heat stroke imminent"
+        }
+      }
+    }
+  }
+}

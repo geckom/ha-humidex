@@ -1,8 +1,8 @@
 {
-    "name": "Humidex",
-    "hacs": "1.0.1",
-    "domains": [
-        "sensor",
-    ],
-    "homeassistant": "0.118.0"
+  "name": "Humidex",
+  "hacs": "1.0.1",
+  "domains": [
+    "humidex"
+  ],
+  "homeassistant": "2024.8.0"
 }

@@ -1,138 +1,331 @@
-from homeassistant.components.sensor import PLATFORM_SCHEMA
-from homeassistant.const import (CONF_NAME, ATTR_ICON)
-from homeassistant.helpers.entity import Entity
+"""Humidex sensor platform."""
 
-import homeassistant.helpers.config_validation as cv
-from homeassistant.util.unit_conversion import TemperatureConverter
+from __future__ import annotations
 
-from homeassistant.const import (
-        ATTR_UNIT_OF_MEASUREMENT,
-        UnitOfTemperature,
-)
+from collections.abc import Mapping
+import logging
+import math
+from typing import Any
 
 import voluptuous as vol
-import math
 
-DOMAIN = 'humidex'
+from homeassistant.components.sensor import (
+    PLATFORM_SCHEMA,
+    SensorDeviceClass,
+    SensorEntity,
+    SensorStateClass,
+)
+from homeassistant.config_entries import SOURCE_IMPORT, ConfigEntry
+from homeassistant.const import (
+    ATTR_UNIT_OF_MEASUREMENT,
+    CONF_ICON,
+    CONF_NAME,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
+    UnitOfTemperature,
+)
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_state_change_event
 
-DEFAULT_NAME = 'Humidex'
+from .const import (
+    COMFORT_AVOID_EXERTION,
+    COMFORT_COMFORTABLE,
+    COMFORT_DANGEROUS,
+    COMFORT_HEAT_STROKE,
+    COMFORT_LEVELS,
+    COMFORT_NO_SIGNIFICANT,
+    COMFORT_SOME_DISCOMFORT,
+    CONF_HUMIDITY,
+    CONF_TEMPERATURE,
+    DEFAULT_COMFORT_ICON,
+    DEFAULT_NAME,
+    DOMAIN,
+)
 
-CONF_TEMPERATURE = 'temperature'
-CONF_HUMIDITY = 'humidity'
+_LOGGER = logging.getLogger(__name__)
+
+PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend(
+    {
+        vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
+        vol.Required(CONF_TEMPERATURE): cv.entity_id,
+        vol.Required(CONF_HUMIDITY): cv.entity_id,
+        vol.Optional(CONF_ICON, default=DEFAULT_COMFORT_ICON): cv.icon,
+    }
+)
 
 
-PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
-    vol.Optional(CONF_NAME, default=DEFAULT_NAME): cv.string,
-    vol.Required(CONF_TEMPERATURE): cv.entity_id,
-    vol.Required(CONF_HUMIDITY): cv.entity_id ,
-    vol.Optional(ATTR_ICON, default='mdi:wifi-strength-outline'): cv.string
-})
-
-def setup_platform(hass, config, add_devices, discovery_info=None):
-    name = config.get(CONF_NAME)
-    temp = config.get(CONF_TEMPERATURE)
-    humid = config.get(CONF_HUMIDITY)
-    icon = config.get(ATTR_ICON)
-
-    add_devices([HumidexSensor(hass, name, temp, humid, icon)])
+def _icon_for_comfort_level(level: str) -> str:
+    """Return the icon that corresponds to a comfort level."""
+    if level in (COMFORT_NO_SIGNIFICANT, COMFORT_COMFORTABLE):
+        return "mdi:gauge-empty"
+    if level == COMFORT_SOME_DISCOMFORT:
+        return "mdi:gauge-low"
+    if level == COMFORT_AVOID_EXERTION:
+        return "mdi:gauge"
+    return "mdi:gauge-full"
 
 
+def _to_celsius(value: float, unit: str | None, fallback_unit: UnitOfTemperature) -> float | None:
+    """Convert a temperature value to Celsius when the input unit is supported."""
+    normalized_unit = (unit or str(fallback_unit)).strip().lower()
+
+    if normalized_unit in {"°c", "c", "celsius"}:
+        return value
+    if normalized_unit in {"°f", "f", "fahrenheit"}:
+        return (value - 32.0) * (5.0 / 9.0)
+
+    return None
 
 
-class HumidexSensor(Entity):
-    """Representation of a Sensor."""
+def _calculate_humidex(temperature_c: float, humidity_pct: float) -> float:
+    """Calculate humidex from Celsius temperature and relative humidity."""
+    clamped_humidity = max(0.0, min(humidity_pct, 100.0))
 
-    def __init__(self, hass, name, temp, humid, icon):
-        """Initialize the sensor."""
-        self._hass = hass
-        self._name = name
-        self._temp = temp
-        self._humid = humid
-        self._icon = icon
-        self._state = None
-        self._humidex = None
-        self._attributes = None
+    if clamped_humidity == 0.0:
+        return temperature_c
+
+    # Calculate dewpoint in Celsius.
+    a = 17.27
+    b = 237.7
+    alpha = ((a * temperature_c) / (b + temperature_c)) + math.log(clamped_humidity / 100.0)
+    dewpoint_c = (b * alpha) / (a - alpha)
+
+    kelvin = 273.15
+    humidex_reference_kelvin = 273.16
+    temperature_k = temperature_c + kelvin
+    dewpoint_k = dewpoint_c + kelvin
+
+    vapor_pressure = 6.11 * math.exp(
+        5417.7530 * ((1 / humidex_reference_kelvin) - (1 / dewpoint_k))
+    )
+    humidex_c = temperature_k + (0.5555 * (vapor_pressure - 10.0)) - kelvin
+
+    return max(humidex_c, temperature_c)
+
+
+def _comfort_level_for_humidex(humidex_c: float) -> str:
+    """Map a humidex value to a comfort category."""
+    if humidex_c < 20:
+        return COMFORT_NO_SIGNIFICANT
+    if humidex_c < 30:
+        return COMFORT_COMFORTABLE
+    if humidex_c < 40:
+        return COMFORT_SOME_DISCOMFORT
+    if humidex_c < 46:
+        return COMFORT_AVOID_EXERTION
+    if humidex_c < 54:
+        return COMFORT_DANGEROUS
+    return COMFORT_HEAT_STROKE
+
+
+def _normalized_base_name(entry_title: str) -> str:
+    """Return a canonical base name ending with 'Humidex' exactly once."""
+    base = entry_title.strip()
+    if base.lower().endswith("humidex"):
+        return f"{base[:-7].strip()} Humidex".strip()
+    return f"{base} Humidex".strip()
+
+
+async def async_setup_entry(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
+) -> None:
+    """Set up Humidex entities from a config entry."""
+    sensors = [
+        HumidexScoreSensor(hass, entry),
+        HumidexComfortSensor(hass, entry),
+    ]
+    async_add_entities(sensors)
+
+
+async def async_setup_platform(
+    hass: HomeAssistant,
+    config: Mapping[str, Any],
+    _async_add_entities: AddEntitiesCallback,
+    _discovery_info: Mapping[str, Any] | None = None,
+) -> None:
+    """Handle legacy async YAML platform setup by importing to config entries."""
+    _import_legacy_yaml_config(hass, config)
+
+
+def _import_legacy_yaml_config(
+    hass: HomeAssistant, config: Mapping[str, Any]
+) -> None:
+    """Queue a config flow import for legacy YAML configuration."""
+    _LOGGER.warning(
+        "YAML configuration for humidex is deprecated and will be removed in a future release. "
+        "Your config has been imported into the UI integration flow."
+    )
+
+    hass.async_create_task(
+        hass.config_entries.flow.async_init(
+            DOMAIN,
+            context={"source": SOURCE_IMPORT},
+            data={
+                CONF_NAME: config.get(CONF_NAME, DEFAULT_NAME),
+                CONF_TEMPERATURE: config[CONF_TEMPERATURE],
+                CONF_HUMIDITY: config[CONF_HUMIDITY],
+                CONF_ICON: config.get(CONF_ICON, DEFAULT_COMFORT_ICON),
+            },
+        )
+    )
+
+
+class HumidexBaseSensor(SensorEntity):
+    """Base class for Humidex entities."""
+
+    _attr_should_poll = False
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Initialize common humidex entity state."""
+        self.hass = hass
+        self._temperature_entity_id: str = entry.data[CONF_TEMPERATURE]
+        self._humidity_entity_id: str = entry.data[CONF_HUMIDITY]
+        self._comfort_icon: str = entry.data.get(CONF_ICON, DEFAULT_COMFORT_ICON)
+        self._humidex_value: float | None = None
+        self._comfort_level: str | None = None
 
     @property
-    def name(self):
-        """Return the name of the sensor."""
-        return self._name
+    def available(self) -> bool:
+        """Return whether computed humidex values are available."""
+        return self._humidex_value is not None and self._comfort_level is not None
 
     @property
-    def state(self):
-        """Return the state of the sensor."""
-        return self._state
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return shared state attributes for humidex entities."""
+        attributes: dict[str, Any] = {
+            CONF_TEMPERATURE: self._temperature_entity_id,
+            CONF_HUMIDITY: self._humidity_entity_id,
+        }
+        if self._humidex_value is not None:
+            attributes["humidex"] = round(self._humidex_value, 2)
+        if self._comfort_level is not None:
+            attributes["comfort"] = self._comfort_level
+        return attributes
 
-    @property
-    def icon(self):
-        """Return the icon to use in the frontend, if any."""
-        return self._icon
-
-    @property
-    def device_state_attributes(self):
-        """Return the state attributes of the monitored installation."""
-        if self._attributes is not None:
-            return self._attributes
-
-    def update(self):
-        """Fetch new state data for the sensor.
-
-        This is the only method that should fetch new data for Home Assistant.
-        """
-        temperature = self._hass.states.get(self._temp)
-        humidity = self._hass.states.get(self._humid)
-    
-        if temperature and humidity and temperature.state != 'unknown' and humidity.state != 'unknown':
-            
-            # Setup varaibles
-            temp = float(temperature.state)
-            humid = float(humidity.state)
-
-            # Calculate kelvin from celcius or fahrenheit
-            entity_unit = temperature.attributes.get(ATTR_UNIT_OF_MEASUREMENT)
-            temp = TemperatureConverter.convert(
-                float(temp), entity_unit, UnitOfTemperature.CELSIUS
+    async def async_added_to_hass(self) -> None:
+        """Register source listeners and seed initial state."""
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass,
+                [self._temperature_entity_id, self._humidity_entity_id],
+                self._async_source_state_changed,
             )
+        )
+        self._refresh_values()
 
-            # Calculate dewpoint
-            A = 17.27
-            B = 237.7
-            alpha = ((A * temp) / (B + temp)) + math.log(humid/100.0)
-            d = (B * alpha) / (A - alpha)
+    @callback
+    def _async_source_state_changed(self, _event) -> None:
+        """Recalculate entity state when a source entity changes."""
+        self._refresh_values()
+        self.async_write_ha_state()
 
-            # Calculate humidex
-            kelvin = 273.15
-            temperature = temp + kelvin
-            dewpoint = d+kelvin
-            # Calculate vapor pressure in mbar.
-            e = 6.11 * math.exp(5417.7530 * ((1 / kelvin) - (1 / dewpoint)))
-            # Calculate saturation vapor pressure
-            es = 6.11 * math.exp(5417.7530 * ((1 / kelvin) - (1 / temperature)))
-            humidity = e / es
-            h = 0.5555 * (e - 10.0)
-            humidex = temperature + h - kelvin
-            self._attributes = {}
-            self._attributes.update({"humidex": humidex})
+    @callback
+    def _refresh_values(self) -> None:
+        """Refresh cached humidex and comfort values from source entities."""
+        temp_state = self.hass.states.get(self._temperature_entity_id)
+        humidity_state = self.hass.states.get(self._humidity_entity_id)
 
-            if humidex < temp:
-                humidex = temp
-            
-            if humidex < 20:
-                self._state = 'No significant'
-                self._icon = 'mdi:gauge-empty'
-            elif humidex < 30:
-                self._state = 'Comfortable'
-                self._icon = 'mdi:gauge-empty'
-            elif humidex < 40:
-                self._state = 'Some discomfort'
-                self._icon = 'mdi:gauge-low'
-            elif humidex < 46:
-                self._state = 'Avoid exertion'
-                self._icon = 'mdi:gauge'
-            elif humidex < 54:
-                self._state = 'Dangerous'
-                self._icon = 'mdi:gauge-full'
-            else:
-                self._state = 'Heat stroke imminent'
-                self._icon = 'mdi:gauge-full'
-            #self._state = humidex
+        if (
+            temp_state is None
+            or humidity_state is None
+            or temp_state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE)
+            or humidity_state.state in (STATE_UNKNOWN, STATE_UNAVAILABLE)
+        ):
+            self._humidex_value = None
+            self._comfort_level = None
+            return
+
+        try:
+            temp_value = float(temp_state.state)
+            humidity_pct = float(humidity_state.state)
+        except ValueError:
+            self._humidex_value = None
+            self._comfort_level = None
+            return
+
+        temp_c = _to_celsius(
+            temp_value,
+            temp_state.attributes.get(ATTR_UNIT_OF_MEASUREMENT),
+            self.hass.config.units.temperature_unit,
+        )
+        if temp_c is None:
+            _LOGGER.debug(
+                "Unsupported temperature unit '%s' on %s",
+                temp_state.attributes.get(ATTR_UNIT_OF_MEASUREMENT),
+                self._temperature_entity_id,
+            )
+            self._humidex_value = None
+            self._comfort_level = None
+            return
+
+        self._humidex_value = _calculate_humidex(temp_c, humidity_pct)
+        self._comfort_level = _comfort_level_for_humidex(self._humidex_value)
+
+
+class HumidexScoreSensor(HumidexBaseSensor):
+    """Numeric Humidex score sensor."""
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_suggested_display_precision = 1
+    _attr_icon = "mdi:thermometer-lines"
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Initialize the humidex numeric score sensor."""
+        super().__init__(hass, entry)
+        base_name = _normalized_base_name(entry.title)
+        self._attr_unique_id = f"{entry.entry_id}_humidex"
+        self._attr_name = base_name
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the rounded humidex score in Celsius units."""
+        if self._humidex_value is None:
+            return None
+        return round(self._humidex_value, 1)
+
+
+class HumidexComfortSensor(HumidexBaseSensor):
+    """Comfort rating sensor derived from Humidex score."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_options = COMFORT_LEVELS
+    _attr_translation_key = "comfort"
+
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
+        """Initialize the comfort classification sensor."""
+        super().__init__(hass, entry)
+        base_name = _normalized_base_name(entry.title)
+        self._attr_unique_id = f"{entry.entry_id}_comfort"
+        self._attr_name = f"{base_name} Comfort"
+
+    @property
+    def icon(self) -> str:
+        """Return a dynamic icon based on the current comfort level."""
+        if self._comfort_level is None:
+            return self._comfort_icon
+        return _icon_for_comfort_level(self._comfort_level)
+
+    @property
+    def native_value(self) -> str | None:
+        """Return the current comfort classification."""
+        return self._comfort_level
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Return comfort attributes including current humidity when valid."""
+        attributes = super().extra_state_attributes
+
+        humidity_state = self.hass.states.get(self._humidity_entity_id)
+        if humidity_state and humidity_state.state not in (STATE_UNKNOWN, STATE_UNAVAILABLE):
+            try:
+                attributes["humidity"] = float(humidity_state.state)
+            except ValueError:
+                pass
+
+        return attributes

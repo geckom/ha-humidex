@@ -1,71 +1,76 @@
-*Please :star: this repo if you find it useful*
+# Humidex for Home Assistant
 
-# Sensor of Humidex for Home Assistant
+A Home Assistant custom integration that calculates humidex from temperature + relative humidity and exposes two entities:
+- `<Name> Humidex` (numeric humidex score)
+- `<Name> Humidex Comfort` (comfort rating enum)
+
+## Features
+- UI-first setup with config flow
+- Reconfigure support from the integration UI
+- Temperature source support for Celsius and Fahrenheit
+- Automatic legacy YAML import into config entries
+- Comfort sensor states support localization via Home Assistant translations
+- HACS-ready packaging (`hacs.json`, `icon.png`, `logo.png`)
+- Minimum Home Assistant version: `2024.8.0`
 
 ## Installation
 
-### Install from HACS (recommended)
+### HACS (recommended)
+1. In HACS, add `https://github.com/geckom/ha-humidex` as a custom repository.
+2. Install `Humidex`.
+3. Restart Home Assistant.
+4. Go to `Settings -> Devices & services -> Add Integration`.
+5. Search for `Humidex` and complete setup.
 
-1. Use HACS after adding this `https://github.com/geckom/ha-humidex` as a custom repository. Skip to 7.
-2. If no HACS, use the tool of choice to open the directory (folder) for your HA configuration (where you find `configuration.yaml`).
-3. If you do not have a `custom_components` directory (folder) there, you need to create it.
-4. In the `custom_components` directory (folder) create a new folder called `humidex`.
-5. Download _all_ the files from the `custom_components/humidex/` directory (folder) in this repository.
-6. Place the files you downloaded in the new directory (folder) you created.
-7. Update your configuration.yaml as per below.
-8. Restart Home Assistant.
+### Manual
+1. Copy `custom_components/humidex` into your Home Assistant `custom_components` folder.
+2. Restart Home Assistant.
+3. Add `Humidex` from `Settings -> Devices & services`.
 
-### Configuration Examples
+## GUI Setup
+
+The setup form requires:
+- `Temperature entity` (filtered to temperature-class sensors)
+- `Humidity entity` (filtered to humidity-class sensors)
+
+Optional fields:
+- `Name`
+- `Comfort icon`
+
+## YAML Migration
+
+Legacy YAML is still accepted temporarily and is imported automatically into a config entry.
 
 ```yaml
-# Example configuration.yaml entry
 sensor:
   - platform: humidex
+    name: Study
     temperature: sensor.study_air_temperature
     humidity: sensor.study_humidity
+    icon: mdi:gauge
 ```
 
-<p align="center">* * *</p>
-I put a lot of work into making this repo and component available and updated to inspire and help others! I will be glad to receive thanks from you — it will give me new strength and add enthusiasm:
-
-### Configuration Variables
-
-**temperature:**\
-  _(entity) (Required)_\
-  Temperature provider entity ID. This can be celcius or fahreheit.
-
-**humidity:**\
-  _(entity) (Required)_\
-  Humidity provider entity ID.
-
-> **_Note_**:\
-> Temperature and humidity values are both required for calculations.
-
-## Track updates
-
-You can automatically track new versions of this component and update it by [HACS][hacs].
+After import, remove the YAML block from `configuration.yaml`.
 
 ## Troubleshooting
 
-To enable debug logs use this configuration:
 ```yaml
-# Example configuration.yaml entry
 logger:
   default: info
   logs:
     custom_components.humidex: debug
 ```
-... then restart HA.
 
-## Contributions are welcome!
+## HACS Compatibility
 
-This is an active open-source project. We are always open to people who want to
-use the code or contribute to it.
+This repository includes the standard assets and metadata HACS expects:
+- `hacs.json`
+- `custom_components/humidex/manifest.json`
+- `icon.png`
+- `logo.png`
 
-We have set up a separate document containing our
-[contribution guidelines](CONTRIBUTING.md).
+## Integration Icon Note
 
-Thank you for being involved! :heart_eyes:
-
-***
-
+Home Assistant integration tile icons shown in the core UI are sourced from the `home-assistant/brands` repository. Matching assets for submission are included in:
+- `.github/brands/humidex/icon.png`
+- `.github/brands/humidex/logo.png`
