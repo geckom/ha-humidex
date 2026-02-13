@@ -7,6 +7,7 @@ from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.config_entries import ConfigFlow
 from homeassistant.const import CONF_ICON, CONF_NAME
 from homeassistant.helpers import selector
@@ -36,13 +37,19 @@ def _build_schema(user_input: Mapping[str, Any] | None = None) -> vol.Schema:
                 CONF_TEMPERATURE,
                 default=data.get(CONF_TEMPERATURE),
             ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain=["sensor"])
+                selector.EntitySelectorConfig(
+                    domain=["sensor"],
+                    device_class=[SensorDeviceClass.TEMPERATURE],
+                )
             ),
             vol.Required(
                 CONF_HUMIDITY,
                 default=data.get(CONF_HUMIDITY),
             ): selector.EntitySelector(
-                selector.EntitySelectorConfig(domain=["sensor"])
+                selector.EntitySelectorConfig(
+                    domain=["sensor"],
+                    device_class=[SensorDeviceClass.HUMIDITY],
+                )
             ),
             vol.Optional(CONF_ICON, default=data.get(CONF_ICON, DEFAULT_COMFORT_ICON)): selector.IconSelector(),
         }
