@@ -113,6 +113,14 @@ def _comfort_level_for_humidex(humidex_c: float) -> str:
     return COMFORT_HEAT_STROKE
 
 
+def _normalized_base_name(entry_title: str) -> str:
+    """Return a canonical base name ending with 'Humidex' exactly once."""
+    base = entry_title.strip()
+    if base.lower().endswith("humidex"):
+        return f"{base[:-7].strip()} Humidex".strip()
+    return f"{base} Humidex".strip()
+
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -265,8 +273,9 @@ class HumidexScoreSensor(HumidexBaseSensor):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         super().__init__(hass, entry)
+        base_name = _normalized_base_name(entry.title)
         self._attr_unique_id = f"{entry.entry_id}_humidex"
-        self._attr_name = f"{entry.title} Humidex"
+        self._attr_name = base_name
 
     @property
     def native_value(self) -> float | None:
@@ -283,8 +292,9 @@ class HumidexComfortSensor(HumidexBaseSensor):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         super().__init__(hass, entry)
+        base_name = _normalized_base_name(entry.title)
         self._attr_unique_id = f"{entry.entry_id}_comfort"
-        self._attr_name = f"{entry.title} Comfort"
+        self._attr_name = f"{base_name} Comfortable"
 
     @property
     def icon(self) -> str:
